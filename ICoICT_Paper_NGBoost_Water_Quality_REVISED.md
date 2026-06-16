@@ -62,11 +62,15 @@ The need for model interpretability in critical applications has driven research
 
 This study uses the Water Potability dataset containing 3,276 water samples characterized by nine physicochemical features: pH, Hardness, Solids (Total Dissolved Solids), Chloramines, Sulfate, Conductivity, Organic Carbon, Trihalomethanes, and Turbidity. The binary target variable indicates potability (1) or non-potability (0). The dataset exhibits class imbalance with 1,998 non-potable samples (60.99%) and 1,278 potable samples (39.01%). Three features contain missing values: pH (14.99%), Sulfate (23.84%), and Trihalomethanes (4.95%).
 
+![Fig. 1. Class distribution of the water potability dataset showing imbalance between non-potable (60.99%) and potable (39.01%) samples.](figures/class_distribution.png)
+
 ### B. Data Preprocessing Pipeline
 
 #### 1) Missing Value Imputation
 
 Missing values are imputed using MICE (Multiple Imputation by Chained Equations) implemented through scikit-learn's IterativeImputer with max_iter=10. MICE models each feature with missing values as a function of other features, iteratively imputing values through chained equations. This approach preserves inter-feature relationships and produces less biased estimates compared to simple imputation methods [4].
+
+![Fig. 2. Distribution of missing values across features in the water potability dataset. pH (14.99%), Sulfate (23.84%), and Trihalomethanes (4.95%) contain missing entries.](figures/missing_values.png)
 
 #### 2) Data Splitting
 
@@ -74,7 +78,11 @@ The dataset is split into training (70%), validation (15%), and test (15%) sets 
 
 #### 3) Feature Scaling
 
-StandardScaler normalization is applied, fitted exclusively on the training set and subsequently applied to validation and test sets. This prevents data leakage and ensures that test set statistics do not influence the preprocessing pipeline.
+StandardScaler normalization is applied, fitted exclusively on the training set and subsequently applied to validation and test sets. This prevents data leakage and ensures that test set statistics do not influence the preprocessing pipeline. The standardization transformation is defined as:
+
+$$z = \frac{x - \mu}{\sigma}$$
+
+where $x$ is the original feature value, $\mu$ is the mean of the feature computed from the training set, and $\sigma$ is the standard deviation of the feature computed from the training set. This transformation ensures each feature has zero mean and unit variance, preventing features with larger scales from dominating the learning process.
 
 #### 4) Class Imbalance Evaluation
 
@@ -93,11 +101,41 @@ NGBoost is configured with the following hyperparameters:
 - Base learner: DecisionTreeRegressor with max_depth=4
 - Early stopping: Enabled on validation set
 
-NGBoost operates by parameterizing the conditional distribution P(Y|X) through iterative boosting. For binary classification with Bernoulli distribution, the model estimates the probability parameter p for each sample. The natural gradient is computed as:
+NGBoost operates by parameterizing the conditional distribution P(Y|X) through iterative boosting. For binary classification with Bernoulli distribution, the model estimates the probability parameter $\mu(x)$ for each sample. The Bernoulli distribution for the target variable is defined as:
 
-g_natural = F^(-1) * g_ordinary
+$$P(y|x) = \mu(x)^y \cdot (1 - \mu(x))^{1-y}$$
 
-where F is the Fisher information matrix and g_ordinary is the conventional gradient. This natural gradient accounts for the geometry of the probability distribution space, yielding more efficient optimization [7].
+where $\mu(x)$ is the predicted probability of the positive class given input $x$, and $y \in \{0, 1\}$ is the binary target variable.
+
+The model is trained by minimizing the Negative Log-Likelihood (NLL) objective function:
+
+$$\mathcal{L}(\theta) = -\frac{1}{N} \sum_{i=1}^{N} [y_i \ln(\mu_i) + (1 - y_i) \ln(1 - \mu_i)]$$
+
+where $N$ is the number of training samples, $\theta$ represents the distribution parameters, and $\mu_i = \mu(x_i)$ is the predicted probability for sample $i$.
+
+The conventional gradient of the loss with respect to the parameters is computed as:
+
+$$\nabla_\theta = \frac{\partial \mathcal{L}(\theta)}{\partial \theta}$$
+
+However, NGBoost utilizes the natural gradient instead of the conventional gradient. The Fisher Information Matrix is defined as:
+
+$$\mathcal{I}(\theta) = E_{y \sim P_\theta} [\nabla_\theta \log P_\theta(y|x) \cdot \nabla_\theta \log P_\theta(y|x)^\top]$$
+
+The natural gradient is then computed by pre-multiplying the conventional gradient with the inverse of the Fisher Information Matrix:
+
+$$\tilde{\nabla}_\theta = \mathcal{I}(\theta)^{-1} \cdot \nabla_\theta$$
+
+This natural gradient accounts for the geometry of the probability distribution space, yielding more efficient optimization [7]. The distribution parameters are updated iteratively using the following rule:
+
+$$\theta^{(m)} = \theta^{(m-1)} - \eta \cdot \tilde{\nabla}_\theta^{(m)}$$
+
+where $\eta$ is the learning rate (set to 0.05 in this study) and $m$ denotes the boosting iteration.
+
+The inherent uncertainty of each prediction is captured through the Bernoulli variance:
+
+$$Var(Y|x) = \mu(x)(1 - \mu(x))$$
+
+This variance is maximized when $\mu(x) = 0.5$, indicating maximum uncertainty in the prediction. Conversely, when $\mu(x)$ approaches 0 or 1, the variance diminishes, reflecting high confidence in the classification decision. This property enables NGBoost to natively quantify prediction uncertainty without requiring post-hoc calibration techniques.
 
 #### 2) Baseline Models
 
@@ -110,14 +148,34 @@ Two baseline models are implemented for comparative evaluation:
 
 The following metrics are employed for comprehensive model assessment:
 
-1. **Accuracy**: Overall classification correctness.
-2. **Precision**: Positive predictive value for the potable class.
-3. **Recall**: Sensitivity for detecting potable water samples.
-4. **F1-Score**: Harmonic mean of precision and recall.
+1. **Accuracy**: Overall classification correctness, defined as the ratio of correct predictions to total predictions:
+
+$$Accuracy = \frac{TP + TN}{TP + TN + FP + FN}$$
+
+2. **Precision**: Positive predictive value for the potable class, measuring the proportion of positive predictions that are correct:
+
+$$Precision = \frac{TP}{TP + FP}$$
+
+3. **Recall**: Sensitivity for detecting potable water samples, measuring the proportion of actual positives correctly identified:
+
+$$Recall = \frac{TP}{TP + FN}$$
+
+4. **F1-Score**: Harmonic mean of precision and recall, providing a balanced measure of both metrics:
+
+$$F1 = 2 \times \frac{Precision \times Recall}{Precision + Recall}$$
+
 5. **Negative Log-Likelihood (NLL)**: Measures the quality of probabilistic predictions; lower values indicate better-calibrated probability estimates.
-6. **Expected Calibration Error (ECE)**: Quantifies the discrepancy between predicted probabilities and observed frequencies.
+
+6. **Expected Calibration Error (ECE)**: Quantifies the discrepancy between predicted probabilities and observed frequencies:
+
+$$ECE = \sum_{m=1}^{M} \frac{|B_m|}{N} |acc(B_m) - conf(B_m)|$$
+
+where $M$ is the number of bins, $B_m$ is the set of samples in bin $m$, $|B_m|$ is the number of samples in bin $m$, $N$ is the total number of samples, $acc(B_m)$ is the actual accuracy within bin $m$, and $conf(B_m)$ is the average predicted confidence within bin $m$.
+
 7. **AUC-ROC**: Area under the Receiver Operating Characteristic curve, measuring discrimination capability across all thresholds.
 8. **McNemar's Test**: Statistical test for comparing paired nominal data to determine whether two classifiers produce significantly different error patterns.
+
+where TP = True Positive, TN = True Negative, FP = False Positive, and FN = False Negative.
 
 ---
 
@@ -141,6 +199,8 @@ Table I presents the comprehensive performance comparison across all three model
 
 All three models achieve similar overall accuracy, with NGBoost and XGBoost tied at 0.6707 and Random Forest at 0.6585. NGBoost achieves the highest precision (0.6923), indicating that when it predicts water as potable, it is correct more frequently. However, NGBoost exhibits lower recall (0.2812) compared to XGBoost (0.3385) and Random Forest (0.3021), suggesting a more conservative classification threshold.
 
+![Fig. 3. ROC curves comparing discrimination performance of NGBoost (AUC=0.6498), XGBoost (AUC=0.6515), and Random Forest (AUC=0.6671) on the test set.](figures/roc_curves.png)
+
 **TABLE II. Confusion Matrices**
 
 | Model | TN | FP | FN | TP |
@@ -150,6 +210,8 @@ All three models achieve similar overall accuracy, with NGBoost and XGBoost tied
 | Random Forest | 266 | 34 | 134 | 58 |
 
 The confusion matrices reveal that NGBoost produces fewer false positives (24) compared to XGBoost (35) and Random Forest (34), consistent with its higher precision. This conservative behavior is desirable in water quality assessment where falsely declaring unsafe water as potable carries greater risk than the reverse error.
+
+![Fig. 4. Confusion matrices for NGBoost, XGBoost, and Random Forest classifiers on the test set.](figures/confusion_matrices.png)
 
 ### B. Statistical Significance Testing
 
@@ -168,6 +230,8 @@ Both comparisons yield p-values well above the conventional significance thresho
 
 The primary advantage of NGBoost lies not in superior point-estimate accuracy but in its native probabilistic output enabling uncertainty quantification without post-hoc calibration.
 
+![Fig. 5. Predicted probability distributions for NGBoost, XGBoost, and Random Forest, showing NGBoost's wider spread of predicted probabilities.](figures/probability_distributions.png)
+
 #### 1) Uncertainty Zone Distribution
 
 Analysis of predicted probabilities reveals that 47.76% of test samples fall within the high-uncertainty zone (predicted probability between 0.4 and 0.6). This substantial proportion of uncertain predictions highlights the challenge of water potability classification and the importance of communicating prediction confidence to decision-makers.
@@ -185,11 +249,15 @@ NGBoost demonstrates superior capability in identifying high-confidence predicti
 
 NGBoost identifies 102 samples with high confidence of being non-potable (P < 0.2) compared to only 19 by Random Forest, and 18 samples with high confidence of being potable (P > 0.8) compared to only 4 by Random Forest. This 5-fold difference in high-confidence identification demonstrates NGBoost's superior ability to separate certain from uncertain predictions.
 
+![Fig. 6. Uncertainty zone comparison between NGBoost and Random Forest, illustrating NGBoost's superior confidence discrimination across prediction probability ranges.](figures/uncertainty_zones.png)
+
 This capability is critical for practical water quality management: samples in high-confidence zones can be acted upon immediately, while samples in the uncertainty zone (0.4-0.6) can be flagged for additional laboratory testing, optimizing resource allocation [1], [16].
 
 ### D. Probabilistic Calibration Assessment
 
 NGBoost achieves an ECE of 0.0705, indicating that predicted probabilities deviate from observed frequencies by approximately 7%. While Random Forest achieves lower ECE (0.0423), it is important to note that Random Forest probabilities are derived from vote proportions that tend to cluster near the class prior, whereas NGBoost probabilities span a wider range enabling finer discrimination. The NLL of 0.6844 for NGBoost, though higher than XGBoost (0.6234) and Random Forest (0.6182), reflects the broader probability distribution range that enables uncertainty characterization.
+
+![Fig. 7. Calibration curves comparing the reliability of predicted probabilities for NGBoost (ECE=0.0705), XGBoost (ECE=0.0670), and Random Forest (ECE=0.0423).](figures/calibration_curves.png)
 
 ### E. Impact of SMOTE-ENN Resampling
 
@@ -202,9 +270,15 @@ The conditional evaluation of SMOTE-ENN reveals important insights about class i
 
 The application of SMOTE-ENN reduced the training set size by 52.2% and degraded accuracy by 17.3%. This performance degradation occurs because SMOTE-ENN's combined oversampling and cleaning removes informative majority class samples while introducing synthetic minority samples that may not represent the true data distribution. This finding aligns with the growing understanding that resampling techniques are not universally beneficial and must be validated empirically [6].
 
+![Fig. 8. Performance comparison of NGBoost with and without SMOTE-ENN resampling, demonstrating the degradation in accuracy from 0.6707 to 0.5549.](figures/smote_enn_comparison.png)
+
 ### F. Discussion
 
 The experimental results support our central hypothesis that NGBoost achieves classification performance equivalent to established methods while providing native probabilistic outputs for uncertainty quantification. The McNemar test results (p=0.9049 and p=0.5320) confirm statistical equivalence, while the uncertainty zone analysis demonstrates NGBoost's unique value proposition.
+
+![Fig. 9. Feature importance rankings derived from the NGBoost model, indicating relative contribution of each physicochemical parameter to potability prediction.](figures/feature_importance.png)
+
+![Fig. 10. XGBoost training loss curve showing convergence behavior during the boosting iterations.](figures/xgboost_loss_curve.png)
 
 The practical implications are significant for water quality management:
 
