@@ -148,6 +148,8 @@ Two baseline models are implemented for comparative evaluation:
 
 The following metrics are employed for comprehensive model assessment:
 
+where TP = True Positive, TN = True Negative, FP = False Positive, and FN = False Negative.
+
 1. **Accuracy**: Overall classification correctness, defined as the ratio of correct predictions to total predictions:
 
 $$Accuracy = \frac{TP + TN}{TP + TN + FP + FN}$$
@@ -174,8 +176,6 @@ where $M$ is the number of bins, $B_m$ is the set of samples in bin $m$, $|B_m|$
 
 7. **AUC-ROC**: Area under the Receiver Operating Characteristic curve, measuring discrimination capability across all thresholds.
 8. **McNemar's Test**: Statistical test for comparing paired nominal data to determine whether two classifiers produce significantly different error patterns.
-
-where TP = True Positive, TN = True Negative, FP = False Positive, and FN = False Negative.
 
 ---
 
