@@ -1,0 +1,307 @@
+{
+  "dataset": {
+    "n_samples": 3276,
+    "n_features": 9,
+    "class0": 1998,
+    "class1": 1278,
+    "pct0": 60.99,
+    "pct1": 39.01
+  },
+  "missing_pct": {
+    "ph": 14.99,
+    "Sulfate": 23.84,
+    "Trihalomethanes": 4.95
+  },
+  "split": {
+    "train": 2292,
+    "val": 492,
+    "test": 492
+  },
+  "smote": {
+    "before": 2292,
+    "after": 1096
+  },
+  "metrics": {
+    "NGBoost": {
+      "accuracy": 0.6646,
+      "precision": 0.6667,
+      "recall": 0.2812,
+      "f1": 0.3956,
+      "nll": 0.6728,
+      "ece": 0.0686,
+      "auc": 0.6506
+    },
+    "XGBoost": {
+      "accuracy": 0.6646,
+      "precision": 0.6337,
+      "recall": 0.3333,
+      "f1": 0.4369,
+      "nll": 0.6238,
+      "ece": 0.0576,
+      "auc": 0.65
+    },
+    "Random Forest": {
+      "accuracy": 0.6585,
+      "precision": 0.6304,
+      "recall": 0.3021,
+      "f1": 0.4085,
+      "nll": 0.6182,
+      "ece": 0.0423,
+      "auc": 0.6671
+    }
+  },
+  "confusion": {
+    "NGBoost": {
+      "tn": 273,
+      "fp": 27,
+      "fn": 138,
+      "tp": 54
+    },
+    "XGBoost": {
+      "tn": 263,
+      "fp": 37,
+      "fn": 128,
+      "tp": 64
+    },
+    "Random Forest": {
+      "tn": 266,
+      "fp": 34,
+      "fn": 134,
+      "tp": 58
+    }
+  },
+  "mcnemar": [
+    {
+      "pair": "NGBoost vs XGBoost",
+      "chi2": 0.0143,
+      "p": 0.9049,
+      "significant": false
+    },
+    {
+      "pair": "NGBoost vs Random Forest",
+      "chi2": 0.0702,
+      "p": 0.7911,
+      "significant": false
+    },
+    {
+      "pair": "XGBoost vs Random Forest",
+      "chi2": 0.093,
+      "p": 0.7604,
+      "significant": false
+    }
+  ],
+  "zones": {
+    "NGBoost": [
+      {
+        "zone": "Zone 1",
+        "range": "mu < 0.2",
+        "n": 97,
+        "acc": 0.7216,
+        "avg_prob": 0.1003
+      },
+      {
+        "zone": "Zone 2",
+        "range": "0.2 - 0.4",
+        "n": 222,
+        "acc": 0.6712,
+        "avg_prob": 0.2986
+      },
+      {
+        "zone": "Zone 3",
+        "range": "0.4 - 0.6",
+        "n": 130,
+        "acc": 0.5615,
+        "avg_prob": 0.4766
+      },
+      {
+        "zone": "Zone 4",
+        "range": "0.6 - 0.8",
+        "n": 25,
+        "acc": 0.76,
+        "avg_prob": 0.6692
+      },
+      {
+        "zone": "Zone 5",
+        "range": "mu >= 0.8",
+        "n": 18,
+        "acc": 0.8889,
+        "avg_prob": 0.9359
+      }
+    ],
+    "XGBoost": [
+      {
+        "zone": "Zone 1",
+        "range": "mu < 0.2",
+        "n": 58,
+        "acc": 0.7931,
+        "avg_prob": 0.1432
+      },
+      {
+        "zone": "Zone 2",
+        "range": "0.2 - 0.4",
+        "n": 243,
+        "acc": 0.6584,
+        "avg_prob": 0.2989
+      },
+      {
+        "zone": "Zone 3",
+        "range": "0.4 - 0.6",
+        "n": 132,
+        "acc": 0.5682,
+        "avg_prob": 0.477
+      },
+      {
+        "zone": "Zone 4",
+        "range": "0.6 - 0.8",
+        "n": 40,
+        "acc": 0.725,
+        "avg_prob": 0.6773
+      },
+      {
+        "zone": "Zone 5",
+        "range": "mu >= 0.8",
+        "n": 19,
+        "acc": 0.8947,
+        "avg_prob": 0.8747
+      }
+    ],
+    "Random Forest": [
+      {
+        "zone": "Zone 1",
+        "range": "mu < 0.2",
+        "n": 19,
+        "acc": 0.8421,
+        "avg_prob": 0.1621
+      },
+      {
+        "zone": "Zone 2",
+        "range": "0.2 - 0.4",
+        "n": 251,
+        "acc": 0.6892,
+        "avg_prob": 0.3141
+      },
+      {
+        "zone": "Zone 3",
+        "range": "0.4 - 0.6",
+        "n": 182,
+        "acc": 0.544,
+        "avg_prob": 0.4732
+      },
+      {
+        "zone": "Zone 4",
+        "range": "0.6 - 0.8",
+        "n": 36,
+        "acc": 0.8889,
+        "avg_prob": 0.662
+      },
+      {
+        "zone": "Zone 5",
+        "range": "mu >= 0.8",
+        "n": 4,
+        "acc": 1.0,
+        "avg_prob": 0.8558
+      }
+    ]
+  },
+  "smote_acc": {
+    "NGBoost": {
+      "without": 0.6646,
+      "with": 0.5549,
+      "diff": -0.1098
+    },
+    "XGBoost": {
+      "without": 0.6646,
+      "with": 0.5772,
+      "diff": -0.0874
+    },
+    "Random Forest": {
+      "without": 0.6585,
+      "with": 0.5854,
+      "diff": -0.0732
+    }
+  },
+  "feature_importance": {
+    "XGBoost": [
+      [
+        "ph",
+        0.1405
+      ],
+      [
+        "Sulfate",
+        0.131
+      ],
+      [
+        "Solids",
+        0.1216
+      ],
+      [
+        "Chloramines",
+        0.1191
+      ],
+      [
+        "Hardness",
+        0.1174
+      ],
+      [
+        "Conductivity",
+        0.0953
+      ],
+      [
+        "Trihalomethanes",
+        0.0936
+      ],
+      [
+        "Turbidity",
+        0.0934
+      ],
+      [
+        "Organic_carbon",
+        0.0881
+      ]
+    ],
+    "Random Forest": [
+      [
+        "Sulfate",
+        0.1387
+      ],
+      [
+        "ph",
+        0.1323
+      ],
+      [
+        "Hardness",
+        0.1199
+      ],
+      [
+        "Solids",
+        0.1121
+      ],
+      [
+        "Chloramines",
+        0.1099
+      ],
+      [
+        "Organic_carbon",
+        0.0986
+      ],
+      [
+        "Conductivity",
+        0.0982
+      ],
+      [
+        "Trihalomethanes",
+        0.0958
+      ],
+      [
+        "Turbidity",
+        0.0947
+      ]
+    ]
+  },
+  "environment": {
+    "scikit_learn": "1.6.1",
+    "xgboost": "2.1.4",
+    "ngboost": "0.5.10",
+    "random_state": 42
+  }
+}
